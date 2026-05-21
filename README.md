@@ -18,6 +18,15 @@ OSError: [Errno 11] Resource deadlock avoided
 
 ---
 
+## 官方 Skill 版本
+
+我们已为以下 Agent 提供正式 Skill 支持：
+
+- **Hermes Agent**：`~/.hermes/skills/fix-icloud-sync/`
+- **OpenClaw Agent**：`~/openclaw/skills/fix-icloud-sync/`
+
+---
+
 ## 不同 Agent 的安装方式
 
 ### 1. Hermes Agent 适配
