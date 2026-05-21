@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# fix-icloud-sync
+# 解决 macOS iCloud Drive 文件访问死锁问题
+# 错误表现: "Resource deadlock avoided" (EDEADLK / OSError: [Errno 11])
+#
+# 原理:
+# iCloud 文件经常以 "stub" 形式存在（仅元数据），直接读取会触发死锁。
+# 本脚本通过 TextEdit 强制触发 iCloud 下载文件内容。
+#
+# 用法:
+#   fix-icloud-sync file1.md file2.jpg
+#   fix-icloud-sync "/path/to/icloud/file.md"
+
+set -e
+
+if [ $# -eq 0 ]; then
+    echo "用法: $0 <文件路径1> [文件路径2] ..."
+    echo "示例: $0 article.md cover.jpg"
+    exit 1
+fi
+
+for filepath in "$@"; do
+    if [ ! -e "$filepath" ]; then
+        echo "❌ 文件不存在: $filepath"
+        continue
+    fi
+
+    echo "⏳ 正在强制同步 iCloud 文件: $(basename "$filepath")"
+
+    # 防止系统睡眠 + 使用 TextEdit 触发 iCloud 真正下载文件
+    caffeinate -s -i -- open -a TextEdit "$filepath" >/dev/null 2>&1 || true
+    sleep 2.5
+
+    # 验证文件是否可以正常读取
+    if python3 -c "
+import sys
+try:
+    with open(sys.argv[1], 'rb') as f:
+        f.read(1024)
+    print('✅ 已成功同步并可访问')
+except OSError as e:
+    print(f'❌ 仍无法访问: {e}')
+    sys.exit(1)
+" "$filepath"; then
+        echo "✅ $(basename "$filepath") 处理完成"
+    else
+        echo "⚠️  $(basename "$filepath") 可能仍需手动处理"
+    fi
+done
+
+echo "🎉 所有文件已处理完毕"
